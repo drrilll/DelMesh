@@ -14,10 +14,30 @@
 class DelMesh
 {
 
+private:
+
+    Mesh mesh;
+    Prop samples;
+    Delaunay_indicator is_NDE;
+    Flippable is_flippable;
+    Mesh::Scalar pv, pe;
+    my_p_queue* q, *flips;
+    OpenMesh::IO::Options writeOptions;
+    Geom_2D* g2d;
+
+    /*
+     * Originally preprocessor values, but recompiling was
+     * taking forever.
+     */
+
+    string output;
+    int score_type;
+    int TRUE = 1;
+    int FALSE = 0;
 
 public:
 
-    DelMesh();
+    DelMesh(int ds, int st, string input, string output);
     ~DelMesh();
 
     /**
@@ -89,16 +109,6 @@ public:
 
 
 
-private:
-
-    Mesh mesh;
-    Prop samples;
-    Delaunay_indicator is_NDE;
-    Flippable is_flippable;
-    Mesh::Scalar pv, pe;
-    my_p_queue* q, *flips;
-    OpenMesh::IO::Options writeOptions;
-    Geom_2D* g2d;
 
 };
 

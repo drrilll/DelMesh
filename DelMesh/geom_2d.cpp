@@ -22,6 +22,8 @@ int Geom_2D::get_sample_point(Mesh::EdgeHandle &ehandle){
      * distance then use a unit vector to find the relevant sample point
      */
 
+    vector<int> stack;
+
     Mesh::HalfedgeHandle heh = mesh->halfedge_handle(ehandle, 0);
 
     //starting point. We position our edge along the x-axis.
@@ -90,12 +92,16 @@ int Geom_2D::get_sample_point(Mesh::EdgeHandle &ehandle){
         mesh_to_plane(heh, (*samps)[i], (p[0]), (p[1]), p2d);
 
         if (score_type == 1){
+            //cout<<"scoring"<<endl;
             if (distance2d(cc, p2d)<r[0]){
                 score += 1.5;
+                //cout <<score<<endl;
             }
             if (distance2d(cc+2, p2d)<r[1]){
                 score += 1.5;
+                //cout <<score<<endl;
             }
+            //cout <<score<<endl;
         }else if (score_type == 0){
             if (distance2d(cc, p2d)<r[0]){
                 score ++;
@@ -117,6 +123,11 @@ int Geom_2D::get_sample_point(Mesh::EdgeHandle &ehandle){
         if (score>maxScore){
             maxScore = score;
             maxIndex = i;
+            stack.clear();
+            stack.push_back(i);
+        }
+        if (score == maxScore){
+            stack.push_back(i);
         }
 
     }
@@ -134,7 +145,17 @@ int Geom_2D::get_sample_point(Mesh::EdgeHandle &ehandle){
         cout<<"max score "<<maxScore<<endl;
 
     }
-    return maxIndex;
+    int index = stack.size()/2;
+    if (stack.size() == 0){
+        cout<<"***********************************"<<endl;
+        cout<<"***********************************"<<endl;
+        cout<<"***********************************"<<endl;
+        cout<<"***********************************"<<endl;
+        cout<<"***********************************"<<endl;
+
+        return 0;
+    }
+    return stack.at(index);
 }
 
 void Geom_2D::output_point(Mesh::EdgeHandle eh){

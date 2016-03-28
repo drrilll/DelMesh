@@ -13,29 +13,18 @@
 #include <OpenMesh/Core/Mesh/PolyMeshT.hh>
 
 using namespace std;
-#define INPUT "ateneav2.obj"
-//#define INPUT "nde-cube.obj"
-//#define OUTPUT "cube-q-score-2.obj"
-#define OUTPUT "ate-out.obj"
-//0 = priority queue
-//1 = queue
-//2 = stack
-#define DATA_STRUCTURE 1
-// 0 = score ++
-// 1 = score +1.5
-// 2 = score +5
-#define score_type 2
-#define TRUE 1
-#define FALSE 0
 
 
-DelMesh::DelMesh(){
 
-    if (!OpenMesh::IO::read_mesh(mesh, INPUT)){
+DelMesh::DelMesh(int ds, int st, string input, string output){
+
+    if (!OpenMesh::IO::read_mesh(mesh, input)){
         cout << "read error"<<endl;
     }
 
 
+    this->output = output;
+    score_type = st;
     // Add the samples property, which is a vector of potential vertex
     // sites along an edge. See associated paper.
     mesh.add_property(samples);
@@ -60,9 +49,9 @@ DelMesh::DelMesh(){
 
     //non-Delaunay edges data structure
 
-    q = new my_p_queue(&mesh, DATA_STRUCTURE);
+    q = new my_p_queue(&mesh, ds);
     flips = new my_p_queue(&mesh, 2);
-    g2d = new Geom_2D(&mesh, &samples, &is_flippable, &is_NDE, score_type);
+    g2d = new Geom_2D(&mesh, &samples, &is_flippable, &is_NDE, st);
 
 
 }
@@ -70,7 +59,7 @@ DelMesh::DelMesh(){
 DelMesh::~DelMesh(){
     //write the mesh to file
     cout<<"writing output.obj"<<endl;
-    if (!OpenMesh::IO::write_mesh(mesh, OUTPUT, writeOptions)){
+    if (!OpenMesh::IO::write_mesh(mesh, output, writeOptions)){
         cout << "write error"<< endl;
     }
     delete q;
@@ -115,7 +104,7 @@ void DelMesh::sanity_check(){
                     }
 
                 }else{
-                    cout<<"flipping"<<endl;
+                    //cout<<"flipping"<<endl;
                     mesh.flip(*eIt);
                 }
             }
@@ -298,11 +287,11 @@ void DelMesh::make_Delaunay_mesh(){
                     }
                 }else{
                     //put a dummy node for testing
-                    cout<<"**********DUMMY NODE 1**************"<<endl;
-                    mesh.property(samples, eh).push_back(Mesh::Point(1000,0,0));
+                    cout<<"**********DUMMY NODE 11**************"<<endl;
+                    //mesh.property(samples, eh).push_back(Mesh::Point(1000,0,0));
                     dummy_count ++;
                 }
-                int c = mesh.property(samples, eh).size();
+                //int c = mesh.property(samples, eh).size();
                 //cout<<c<<" sample edge 1******************************************"<<endl;
                 // edge (mid, vh1)
             }else if (v == mid){
@@ -379,7 +368,7 @@ void DelMesh::make_Delaunay_mesh(){
             eh = mesh.edge_handle(*fhIt);
             v = mesh.from_vertex_handle(*fhIt);
             if (v==mid){
-                int c = mesh.property(samples, eh).size();
+                //int c = mesh.property(samples, eh).size();
                 //if (c ==0){cout<<" 0 sample edge 2****************************************** "<<i<<endl;}
                 //else{cout<<c<<" sample edge 2****************************************** "<<i<<endl;}
             }
@@ -470,10 +459,10 @@ void DelMesh::make_Delaunay_mesh(){
                     //put a dummy node for testing
                    // cout<<"**********DUMMY NODE 2**************"<<endl;
                    // cout<<"samples "<<samps.size()<<" index: "<<index<<endl;
-                    mesh.property(samples, eh).push_back(Mesh::Point(1000,0,0));
+                    //mesh.property(samples, eh).push_back(Mesh::Point(1000,0,0));
                     dummy_count ++;
                 }
-                int c = mesh.property(samples, eh).size();
+                //int c = mesh.property(samples, eh).size();
                 //if (c ==0){cout<<" 0 sample edge 3 ******************************************"<<endl;}
                 // edge (vh1, mid) has been handled
                 // edge (to, vh1)
@@ -542,8 +531,8 @@ void DelMesh::make_Delaunay_mesh(){
             v = mesh.from_vertex_handle(*fhIt);
 
             if (v==to){
-                int c = mesh.property(samples, eh).size();
-               // if (c ==0){cout<<" 0 sample edge ******************************************"<<endl;}
+                //int c = mesh.property(samples, eh).size();
+                //if (c ==0){cout<<" 0 sample edge ******************************************"<<endl;}
             }
 
             // edge (to, mid) has been handled
@@ -580,7 +569,7 @@ void DelMesh::make_Delaunay_mesh(){
         }
 
     }
-    cout<<"dummy nodes: "<<dummy_count<<endl;
+    //cout<<"dummy nodes: "<<dummy_count<<endl;
 
 }
 
@@ -886,12 +875,18 @@ void DelMesh::test_pq(){
          * test it on 100 edges
          */
 
+    eIt = eBegin;
     Mesh::Scalar length = 0;
+    for (int i = 0; i < 100; i++, eIt++){
+        q->push(*eIt);
+    }
+
     for (int i = 0; i < 100; i++, eIt++){
         length = mesh.calc_edge_length(q->top());
         q->pop();
         cout << "length "<<i<<": "<<length<<endl;
     }
+
 
 }
 

@@ -23,7 +23,7 @@ public:
     }
 
     bool operator()(Mesh::EdgeHandle e1, Mesh::EdgeHandle e2){
-        return (mesh->calc_edge_length(e1)>mesh->calc_edge_length(e2));
+        return (mesh->calc_edge_length(e1)<mesh->calc_edge_length(e2));
     }
 
 private:
@@ -60,6 +60,8 @@ public:
     ~my_p_queue(){
         delete comp;
     }
+
+    void clear() {c.clear();}
 
     bool empty()       const { return c.empty();}
 

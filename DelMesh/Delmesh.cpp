@@ -831,9 +831,6 @@ void DelMesh::find_nd_edges(){
     eEnd = mesh.edges_end();
 
 
-    // I will have to come back to this. The danger is that this edge might
-    // be on a boundary. I think there is a test for that.
-    //TODO boundary test
     for (eIt = eBegin; eIt != eEnd; eIt++){
         //add sample points to the edge
         if (!mesh.is_boundary(*eIt)){
@@ -871,6 +868,9 @@ void DelMesh::test_pq(){
     eBegin = mesh.edges_begin();
     eEnd = mesh.edges_end();
 
+    my_p_queue stack(&mesh, 2);
+    my_p_queue queue(&mesh, 1);
+
     /*
          * test it on 100 edges
          */
@@ -879,12 +879,34 @@ void DelMesh::test_pq(){
     Mesh::Scalar length = 0;
     for (int i = 0; i < 100; i++, eIt++){
         q->push(*eIt);
+        queue.push(*eIt);
     }
 
     for (int i = 0; i < 100; i++, eIt++){
         length = mesh.calc_edge_length(q->top());
+        stack.push(q->top());
+        queue.push(q->top());
         q->pop();
         cout << "length "<<i<<": "<<length<<endl;
+    }
+
+    for (int i = 0; i < 100; i++, eIt++){
+        length = mesh.calc_edge_length(stack.top());
+        stack.pop();
+        cout << "stack length "<<i<<": "<<length<<endl;
+    }
+
+    for (int i = 0; i < 100; i++, eIt++){
+        length = mesh.calc_edge_length(queue.top());
+        stack.push(queue.top());
+        queue.pop();
+        cout << "queue length "<<i<<": "<<length<<endl;
+    }
+
+    for (int i = 0; i < 100; i++, eIt++){
+        length = mesh.calc_edge_length(stack.top());
+        stack.pop();
+        cout << "stack length "<<i<<": "<<length<<endl;
     }
 
 

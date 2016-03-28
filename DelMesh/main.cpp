@@ -7,7 +7,7 @@
 #include "Delmesh.h"
 
 int main(int argc, char** argv) {
-    string input = "elephant.obj";
+    string input = "bunny.obj";
     string output = "output/ate-out.obj";
 
     //0 = priority queue
@@ -30,43 +30,45 @@ int main(int argc, char** argv) {
     DelMesh* mesh;
 
 
-    mesh = new DelMesh(0, 0, "elephant.obj", "output2/elephant-pq-0.obj");
+    mesh = new DelMesh(0, 0, "bunny.obj", "output2/bunny-pq-0.obj");
+    mesh->test_pq();
+    delete(mesh);
+/*    mesh->process_mesh();
+    delete(mesh);
+
+    mesh = new DelMesh(1, 0, "bunny.obj", "output2/bunny-q-0.obj");
     mesh->process_mesh();
     delete(mesh);
 
-    mesh = new DelMesh(1, 0, "elephant.obj", "output2/elephant-q-0.obj");
+    mesh = new DelMesh(2, 0, "bunny.obj", "output2/bunny-s-0.obj");
     mesh->process_mesh();
     delete(mesh);
 
-    mesh = new DelMesh(2, 0, "elephant.obj", "output2/elephant-s-0.obj");
+    mesh = new DelMesh(0, 1, "bunny.obj", "output2/bunny-pq-1.obj");
     mesh->process_mesh();
     delete(mesh);
 
-    mesh = new DelMesh(0, 1, "elephant.obj", "output2/elephant-pq-1.obj");
+    mesh = new DelMesh(1, 1, "bunny.obj", "output2/bunny-q-1.obj");
     mesh->process_mesh();
     delete(mesh);
 
-    mesh = new DelMesh(1, 1, "elephant.obj", "output2/elephant-q-1.obj");
+    mesh = new DelMesh(2, 1, "bunny.obj", "output2/bunny-s-1.obj");
     mesh->process_mesh();
     delete(mesh);
 
-    mesh = new DelMesh(2, 1, "elephant.obj", "output2/elephant-s-1.obj");
+    mesh = new DelMesh(0, 2, "bunny.obj", "output2/bunny-pq-2.obj");
     mesh->process_mesh();
     delete(mesh);
 
-    mesh = new DelMesh(0, 2, "elephant.obj", "output2/elephant-pq-2.obj");
+    mesh = new DelMesh(1, 2, "bunny.obj", "output2/bunny-q-2.obj");
     mesh->process_mesh();
     delete(mesh);
 
-    mesh = new DelMesh(1, 2, "elephant.obj", "output2/elephant-q-2.obj");
+    mesh = new DelMesh(2, 2, "bunny.obj", "output2/bunny-s-2.obj");
     mesh->process_mesh();
     delete(mesh);
 
-    mesh = new DelMesh(2, 2, "elephant.obj", "output2/elephant-s-2.obj");
-    mesh->process_mesh();
-    delete(mesh);
-
-    /**********************************************/
+    /**********************************************
 
     mesh = new DelMesh(0, 0, "nde-cube.obj", "output2/cube-pq-0.obj");
     mesh->process_mesh();
@@ -104,7 +106,7 @@ int main(int argc, char** argv) {
     mesh->process_mesh();
     delete(mesh);
 
-
+//*/
 
 
     return 0;

@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
             output = argv[++i];
             cout << "output: "<< output<< endl;
         }
-        //output all combinations of arguments for given input file
+        //output all combinations of arguments for given input/output file
         else if (strcmp(argv[i],"-all")==0){
             all = true;
             cout<<"all"<<endl;

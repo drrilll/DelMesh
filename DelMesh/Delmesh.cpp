@@ -16,7 +16,7 @@ using namespace std;
 
 
 
-DelMesh::DelMesh(int ds, int st, string input, string output){
+DelMesh::DelMesh(int ds, int st, string input, string output,  bool median){
 
     if (!OpenMesh::IO::read_mesh(mesh, input)){
         cout << "read error"<<endl;
@@ -51,14 +51,14 @@ DelMesh::DelMesh(int ds, int st, string input, string output){
 
     q = new my_p_queue(&mesh, ds);
     flips = new my_p_queue(&mesh, 2);
-    g2d = new Geom_2D(&mesh, &samples, &is_flippable, &is_NDE, st);
+    g2d = new Geom_2D(&mesh, &samples, &is_flippable, &is_NDE, st, median);
 
 
 }
 
 DelMesh::~DelMesh(){
     //write the mesh to file
-    cout<<"writing output.obj"<<endl;
+    cout<<"writing "<<output<<endl;
     if (!OpenMesh::IO::write_mesh(mesh, output, writeOptions)){
         cout << "write error"<< endl;
     }
@@ -1034,7 +1034,7 @@ int DelMesh::test_2D_flattening(){
     }
 
 
-    Geom_2D g(&mesh, &samples, &is_flippable, &is_NDE, score_type);
+    Geom_2D g(&mesh, &samples, &is_flippable, &is_NDE, score_type, true);
 
     Mesh::EdgeIter eIt = mesh.edges_begin();
 

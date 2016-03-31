@@ -37,7 +37,7 @@ private:
 
 public:
 
-    DelMesh(int ds, int st, string input, string output);
+    DelMesh(int ds, int st, string input, string output, bool median);
     ~DelMesh();
 
     /**

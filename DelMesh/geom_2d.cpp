@@ -1,13 +1,14 @@
 #include "geom_2d.h"
 #include "triangle_properties.hpp"
 
-Geom_2D::Geom_2D(Mesh *mesh, Prop *samples, Flippable *is_flippable, Delaunay_indicator* is_NDE, int score_type)
+Geom_2D::Geom_2D(Mesh *mesh, Prop *samples, Flippable *is_flippable, Delaunay_indicator* is_NDE, int score_type, bool median)
 {
     this->mesh = mesh;
     this->samples = samples;
     this->is_flippable = is_flippable;
     this->is_NDE = is_NDE;
     this->score_type = score_type;
+    this->median = median;
 }
 
 /**
@@ -145,6 +146,10 @@ int Geom_2D::get_sample_point(Mesh::EdgeHandle &ehandle){
         cout<<"max score "<<maxScore<<endl;
 
     }
+    if(!median){
+        return maxIndex;
+    }
+
     int index = stack.size()/2;
     if (stack.size() == 0){
         cout<<"***********************************"<<endl;

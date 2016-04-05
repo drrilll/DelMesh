@@ -69,11 +69,14 @@ DelMesh::~DelMesh(){
 
 void DelMesh::process_mesh(){
     // find all the NDE's
+    cout<<"finding nde's"<<endl;
     find_nd_edges();
 
     cout<<"done finding nde's"<<endl;
 
+    cout<<"making the mesh"<<endl;
     make_Delaunay_mesh();
+    cout<<"done making mesh, entering loop"<<endl;
 
     sanity_check();
 
@@ -145,6 +148,7 @@ void DelMesh::make_Delaunay_mesh(){
         if (index == -1){
             //well fuck. There is no provision for this, because theoretically it should
             //never happen. But it does.
+            cout <<"no sample points******************"<<endl;
             continue;
             //we pretend it doesn't
         }
@@ -697,6 +701,7 @@ void DelMesh::make_sample_points(Mesh::EdgeHandle ehandle){
          */
     Mesh::HalfedgeHandle hedge = mesh.halfedge_handle(ehandle, 1);
     Mesh::Point to, from;
+    //cout<<"getting to and from vertices"<<endl;
     to = mesh.point(mesh.to_vertex_handle(hedge));
     from = mesh.point(mesh.from_vertex_handle(hedge));
 
@@ -708,6 +713,8 @@ void DelMesh::make_sample_points(Mesh::EdgeHandle ehandle){
     Mesh::Point samp(unit);
     samp *= total;
     samp += from;
+
+    //cout<<"pushing initial sample"<<endl;
     mesh.property(samples, ehandle).push_back(samp);
 
     // We have our first sample in. If this is the shortest edge, it could
@@ -718,12 +725,14 @@ void DelMesh::make_sample_points(Mesh::EdgeHandle ehandle){
 
     // Otherwise keep adding samples
     double mark = length - (pv + pe);
-
+    //cout<<"pushing samples "<<mark<<endl;
     while (total < mark){
         total += pe;
         samp = (unit * total) + from;
         mesh.property(samples, ehandle).push_back(samp);
     }
+
+    //cout<<"add the last sample"<<endl;
 
     // We add one more sample at length *pv from the "to" vertex
     samp = (unit * (length - pv))+from;

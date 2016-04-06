@@ -71,20 +71,18 @@ int Geom_2D::get_sample_point(Mesh::EdgeHandle &ehandle){
     get_circumcircle(p[0], p[6], p[5], &cc[10], r[5]);
 
     vector<Mesh::Point>* samps;
-    samps = &(mesh->property(*samples, ehandle));
+    samps = (mesh->property(*samples, ehandle));
     double score;
     Point_2D p2d(0.0,0.0,0.0);
     int maxScore = 0;
     int maxIndex = 0;
 
     if (samps->size()==0){
-        cout<<"*************************"<<endl<<"0 samples"<<endl;
-        output_point(ehandle);
-        cout<<"*************************"<<endl;
         //this should never happen....but it does.
         return -1;
 
     }
+
     for (int i = 0; i < samps->size(); i++){
         //first two circles if the sample points are in both we
         //score 5

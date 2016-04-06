@@ -70,7 +70,6 @@ int main(int argc, char* argv[]) {
 
     mesh = new DelMesh(ds, score, input, output, median);
     mesh->process_mesh();
-    //mesh->find_nd_edges();
     delete(mesh);
 
 //    for (int i = 0; i < 50; i ++){

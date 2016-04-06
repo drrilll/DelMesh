@@ -65,11 +65,28 @@ DelMesh::~DelMesh(){
     delete q;
     delete g2d;
     delete flips;
+
+    Mesh::EdgeIter eBegin, eEnd, eIt;
+    eBegin = mesh.edges_begin();
+    eEnd = mesh.edges_end();
+
+
+    for (eIt = eBegin; eIt != eEnd; eIt++){
+        if (!mesh.property(is_flippable, eIt) &&!mesh.is_boundary(eIt)){
+            delete(mesh.property(samples, eIt));
+        }
+    }
 }
 
+/**
+ * We can only call this once, otherwise we will have a memory leak.
+ * @brief DelMesh::process_mesh
+ */
 void DelMesh::process_mesh(){
     // find all the NDE's
     cout<<"finding nde's"<<endl;
+
+    // important that this is only called once, otherwise memory leak
     find_nd_edges();
 
     cout<<"done finding nde's"<<endl;
@@ -99,7 +116,7 @@ void DelMesh::sanity_check(){
         if (!mesh.is_boundary(*eIt)){
             if (is_nd_edge(*eIt, false)){
                 if (mesh.property(is_flippable, *eIt)==FALSE){
-                    if (mesh.property(samples, *eIt).size()==0){
+                    if (mesh.property(samples, *eIt)->size()==0){
                         cout << "bad edge, length "<<mesh.calc_edge_length(*eIt)<<endl;
                         count ++;
                     }else{
@@ -123,7 +140,7 @@ void DelMesh::sanity_check(){
 void DelMesh::make_Delaunay_mesh(){
 
     Mesh::EdgeHandle eh;
-    vector<Mesh::Point> samps;
+    vector<Mesh::Point>* samps;
     int index;
     Mesh::Point point;
     Mesh::Point p1, p2;
@@ -143,6 +160,10 @@ void DelMesh::make_Delaunay_mesh(){
         q->pop();
 
         //find the right sample point
+        if (mesh.is_boundary(eh)){
+            cout <<" boundary edge"<<endl;
+        }
+
         index = g2d->get_sample_point(eh);
 
         if (index == -1){
@@ -153,13 +174,13 @@ void DelMesh::make_Delaunay_mesh(){
             //we pretend it doesn't
         }
 
-        //assuming that this invokes the copy constructor, since
-        //we will be deleting the edge
+        // remember to delete this when we are done
         samps = mesh.property(samples, eh);
 
-        point = samps.at(index);
+        //cout<<"if we are not initializing properly, you will not see the next message"<<endl;
+        point = samps->at(index);
 
-        //cout<<"samps index point: "<<samps[index]<<endl;
+        //cout<<"next message samps index point: "<<samps->at(index)<<endl;
 
         heh1 = mesh.halfedge_handle(eh, 0);
         heh2 = mesh.halfedge_handle(eh, 1);
@@ -277,17 +298,17 @@ void DelMesh::make_Delaunay_mesh(){
 
             // edge (from, mid)
             if (v == from){
-                //cout<< "from,mid, vh1: v ==from "<<i<<endl;
-
+                // this is a new edge made from the old edge, we need new samples
+                mesh.property(samples, eh) = new vector<Mesh::Point>();
                 //we want to put the samples on, but we have to
                 //put the correct ones
-                if (is_on_edge(samps[0], eh)){
+                if (is_on_edge(samps->at(0), eh)){
                     for (int i = 0; i < index; i++){
-                        mesh.property(samples, eh).push_back(samps[i]);
+                        mesh.property(samples, eh)->push_back(samps->at(i));
                     }
-                }else if (is_on_edge(samps[samps.size()-1], eh)){
-                    for (int i = index +1; i < samps.size(); i++){
-                        mesh.property(samples, eh).push_back(samps[i]);
+                }else if (is_on_edge(samps->at(samps->size()-1), eh)){
+                    for (int i = index +1; i < samps->size(); i++){
+                        mesh.property(samples, eh)->push_back(samps->at(i));
                     }
                 }else{
                     //put a dummy node for testing
@@ -295,23 +316,19 @@ void DelMesh::make_Delaunay_mesh(){
                     //mesh.property(samples, eh).push_back(Mesh::Point(1000,0,0));
                     dummy_count ++;
                 }
-                //int c = mesh.property(samples, eh).size();
-                //cout<<c<<" sample edge 1******************************************"<<endl;
+
                 // edge (mid, vh1)
             }else if (v == mid){
-                //cout<< "from,mid, vh1: v ==mid "<<i<<endl;
-
                 mesh.property(is_flippable, eh) = TRUE;
                 // edge (vh1, from)
             }else if (v == vh1){
-                //cout<< "from,mid, vh1: v ==vh1 "<<i<<endl;
                 if (mesh.property(is_NDE, eh)==1){
                     if (mesh.property(is_flippable, eh)==TRUE){
                         test_flip(eh);
                         //mesh.flip(eh);
 
                     }
-                }else if (is_nd_edge(eh, false)){
+                }else if (is_nd_edge(eh, false) && !mesh.is_boundary(eh)){
                     if (mesh.property(is_flippable, eh)==TRUE){
                         test_flip(eh);
                         //mesh.flip(eh);
@@ -338,8 +355,8 @@ void DelMesh::make_Delaunay_mesh(){
 
         for(; feIt.is_valid(); ++feIt) {
             /*
-                     * grab a half edge, test both points, see what I have
-                     */
+             * grab a half edge, test both points, see what I have
+            */
             heh = mesh.halfedge_handle(*feIt, 0);
             v1 = mesh.to_vertex_handle(heh);
             v2 = mesh.from_vertex_handle(heh);
@@ -379,17 +396,15 @@ void DelMesh::make_Delaunay_mesh(){
 
             // edge (mid, from)
             if (v == vh2){
-                //cout<< "v ==vh2 "<<i<<endl;
                 mesh.property(is_flippable, eh) = TRUE;
                 // edge (from, vh2)
             }else if (v == from){
-                //cout<< "v ==from "<<i<<endl;
                 if (mesh.property(is_NDE, eh)==TRUE){
                     if (mesh.property(is_flippable, eh)==TRUE){
                         test_flip(eh);
                         //mesh.flip(eh);
                     }
-                }else if (is_nd_edge(eh, false)){
+                }else if (is_nd_edge(eh, false) && !mesh.is_boundary(eh)){
                     if (mesh.property(is_flippable, eh)==TRUE){
                         test_flip(eh);
                         //mesh.flip(eh);
@@ -449,20 +464,21 @@ void DelMesh::make_Delaunay_mesh(){
 
             // edge (mid, to)
             if (v == mid){
+                mesh.property(samples, eh) = new vector<Mesh::Point>();
                 //we want to put the samples on, but we have to
                 //put the correct ones
-                if (is_on_edge(samps[0], eh)){
+                if (is_on_edge(samps->at(0), eh)){
                     for (int i = 0; i < index; i++){
-                        mesh.property(samples, eh).push_back(samps[i]);
+                        mesh.property(samples, eh)->push_back(samps->at(i));
                     }
-                }else if (is_on_edge(samps[samps.size()-1], eh)){
-                    for (int i = index +1; i < samps.size(); i++){
-                        mesh.property(samples, eh).push_back(samps[i]);
+                }else if (is_on_edge(samps->at(samps->size()-1), eh)){
+                    for (int i = index +1; i < samps->size(); i++){
+                        mesh.property(samples, eh)->push_back(samps->at(i));
                     }
                 }else{
                     //put a dummy node for testing
-                   // cout<<"**********DUMMY NODE 2**************"<<endl;
-                   // cout<<"samples "<<samps.size()<<" index: "<<index<<endl;
+                    // cout<<"**********DUMMY NODE 2**************"<<endl;
+                    // cout<<"samples "<<samps.size()<<" index: "<<index<<endl;
                     //mesh.property(samples, eh).push_back(Mesh::Point(1000,0,0));
                     dummy_count ++;
                 }
@@ -476,7 +492,7 @@ void DelMesh::make_Delaunay_mesh(){
                         test_flip(eh);
                         //mesh.flip(eh);
                     }
-                }else if (is_nd_edge(eh, false)){
+                }else if (is_nd_edge(eh, false) && !mesh.is_boundary(eh)){
                     if (mesh.property(is_flippable, eh)==TRUE){
                         test_flip(eh);
                         //mesh.flip(eh);
@@ -548,7 +564,7 @@ void DelMesh::make_Delaunay_mesh(){
                         test_flip(eh);
                         //mesh.flip(eh);
                     }
-                }else if (is_nd_edge(eh, false)){
+                }else if (is_nd_edge(eh, false) && !mesh.is_boundary(eh)){
                     if (mesh.property(is_flippable, eh)==TRUE){
                         test_flip(eh);
                         //mesh.flip(eh);
@@ -561,6 +577,7 @@ void DelMesh::make_Delaunay_mesh(){
                 }
 
             }
+
             fhIt++;
         }
 
@@ -571,6 +588,7 @@ void DelMesh::make_Delaunay_mesh(){
             mesh.flip(flips->top());
             flips->pop();
         }
+        delete(samps);
 
     }
     //cout<<"dummy nodes: "<<dummy_count<<endl;
@@ -715,7 +733,7 @@ void DelMesh::make_sample_points(Mesh::EdgeHandle ehandle){
     samp += from;
 
     //cout<<"pushing initial sample"<<endl;
-    mesh.property(samples, ehandle).push_back(samp);
+    mesh.property(samples, ehandle)->push_back(samp);
 
     // We have our first sample in. If this is the shortest edge, it could
     // be the only sample (highly unlikely though).
@@ -725,19 +743,19 @@ void DelMesh::make_sample_points(Mesh::EdgeHandle ehandle){
 
     // Otherwise keep adding samples
     double mark = length - (pv + pe);
-    //cout<<"pushing samples "<<mark<<endl;
+    cout<<"pushing samples "<<(mark/pe)<<endl;
     while (total < mark){
         total += pe;
         samp = (unit * total) + from;
-        mesh.property(samples, ehandle).push_back(samp);
+        mesh.property(samples, ehandle)->push_back(samp);
     }
 
     //cout<<"add the last sample"<<endl;
 
     // We add one more sample at length *pv from the "to" vertex
     samp = (unit * (length - pv))+from;
-    mesh.property(samples, ehandle).push_back(samp);
-
+    mesh.property(samples, ehandle)->push_back(samp);
+    cout<<"all samples added"<<endl;
     // all samples have been added
 
 }
@@ -751,7 +769,7 @@ void DelMesh::test_samples(){
     make_sample_points(*edge);
     vector<Mesh::Point>* samps;
     cout<<"getting test samples"<<endl;
-    samps = &(mesh.property(samples, *edge));
+    samps = (mesh.property(samples, *edge));
     cout<<"got test samples"<<endl;
     double length = mesh.calc_edge_length(*edge);
     int num_samples = 2;
@@ -784,7 +802,7 @@ void DelMesh::test_samples(){
     edge ++; edge ++; edge ++;
     make_sample_points(*edge);
     vector<Mesh::Point>* sam;
-    sam = &(mesh.property(samples, *edge));
+    sam = (mesh.property(samples, *edge));
     it = samps->begin(); it2 = sam->begin();
     for (int i = 0; i < 10; i++){
         cout << "Point 1: "<<*it++<<endl;
@@ -839,15 +857,16 @@ void DelMesh::find_nd_edges(){
     eBegin = mesh.edges_begin();
     eEnd = mesh.edges_end();
 
+    int count = 0;
 
     for (eIt = eBegin; eIt != eEnd; eIt++){
+        count ++;
+        //and now we are managing memory
+        mesh.property(samples, *eIt) = new vector<Mesh::Point>();
         //add sample points to the edge
         if (!mesh.is_boundary(*eIt)){
             make_sample_points(*eIt);
-            if (is_nd_edge(*eIt)){
-                //bullshit doesn't work
-                //mesh.set_color(*eIt, Mesh::Color(0.0,0.0,1.0,1.0));
-
+            if (is_nd_edge(*eIt, false)){
                 //indicate that the edge is non-Delaunay
                 mesh.property(is_NDE, *eIt) = 1;
                 //add the edge to our data structure of current NDE's
@@ -856,6 +875,7 @@ void DelMesh::find_nd_edges(){
         }
     }
     cout<<"# NDE's: "<<q->size()<<endl;
+    cout << "# edges: "<< count << endl;
 
 }
 

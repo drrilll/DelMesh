@@ -53,7 +53,7 @@ public:
      */
     void make_Delaunay_mesh();
 
-    void sanity_check();
+    void refind_nd_edges();
 
     void test_flip(Mesh::EdgeHandle eh);
 

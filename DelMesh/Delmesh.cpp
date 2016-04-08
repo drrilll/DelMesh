@@ -93,18 +93,19 @@ void DelMesh::process_mesh(){
 
     cout<<"making the mesh"<<endl;
     make_Delaunay_mesh();
-    cout<<"done making mesh, entering loop"<<endl;
+    cout<<"done making mesh, entering loop. Edges left to process:"<<endl;
 
-    sanity_check();
+    refind_nd_edges();
 
     while(q->size()>0){
         make_Delaunay_mesh();
-        sanity_check();
+        refind_nd_edges();
     }
+    cout<<endl;
 
 }
 
-void DelMesh::sanity_check(){
+void DelMesh::refind_nd_edges(){
     Mesh::EdgeIter eBegin, eEnd, eIt;
     eBegin = mesh.edges_begin();
     eEnd = mesh.edges_end();
@@ -130,7 +131,8 @@ void DelMesh::sanity_check(){
             }
         }
     }
-    cout<<"bad edges: "<<count<<" stack edges: "<<q->size()<<endl;
+    //cout<<"bad edges: "<<count<<" stack edges: "<<q->size()<<endl;
+    cout<<q->size()<<" "<<flush;
 }
 
 /**
@@ -167,11 +169,11 @@ void DelMesh::make_Delaunay_mesh(){
         index = g2d->get_sample_point(eh);
 
         if (index == -1){
-            //well fuck. There is no provision for this, because theoretically it should
+            //There is no provision for this, because theoretically it should
             //never happen. But it does.
-            cout <<"no sample points******************"<<endl;
             continue;
-            //we pretend it doesn't
+            //we pretend it doesn't. All the edges are processed in the end, so I
+            //am not sure what happens here.
         }
 
         // remember to delete this when we are done
@@ -311,9 +313,6 @@ void DelMesh::make_Delaunay_mesh(){
                         mesh.property(samples, eh)->push_back(samps->at(i));
                     }
                 }else{
-                    //put a dummy node for testing
-                    cout<<"**********DUMMY NODE 11**************"<<endl;
-                    //mesh.property(samples, eh).push_back(Mesh::Point(1000,0,0));
                     dummy_count ++;
                 }
 
@@ -476,10 +475,6 @@ void DelMesh::make_Delaunay_mesh(){
                         mesh.property(samples, eh)->push_back(samps->at(i));
                     }
                 }else{
-                    //put a dummy node for testing
-                    // cout<<"**********DUMMY NODE 2**************"<<endl;
-                    // cout<<"samples "<<samps.size()<<" index: "<<index<<endl;
-                    //mesh.property(samples, eh).push_back(Mesh::Point(1000,0,0));
                     dummy_count ++;
                 }
                 //int c = mesh.property(samples, eh).size();
@@ -743,7 +738,7 @@ void DelMesh::make_sample_points(Mesh::EdgeHandle ehandle){
 
     // Otherwise keep adding samples
     double mark = length - (pv + pe);
-    cout<<"pushing samples "<<(mark/pe)<<endl;
+    //cout<<"pushing samples "<<(mark/pe)<<endl;
     while (total < mark){
         total += pe;
         samp = (unit * total) + from;
@@ -755,7 +750,6 @@ void DelMesh::make_sample_points(Mesh::EdgeHandle ehandle){
     // We add one more sample at length *pv from the "to" vertex
     samp = (unit * (length - pv))+from;
     mesh.property(samples, ehandle)->push_back(samp);
-    cout<<"all samples added"<<endl;
     // all samples have been added
 
 }

@@ -55,7 +55,7 @@ public:
 
     void refind_nd_edges();
 
-    void test_flip(Mesh::EdgeHandle eh);
+    void flip_later(Mesh::EdgeHandle eh);
 
     /*
      * make the constants pe and pv - see paper

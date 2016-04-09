@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
     string input = "bunny.obj";
     string output = "output/ate-out.obj";
 
-    //delmesh -i something -o seomtihgn -ds stack -score 0 -nomedian
+    //delmesh -i something -o something -ds stack -score 0 -nomedian
     bool out = false, all = false, median = true;
     int ds = 2, score = 2;
     int i = 1;
@@ -71,12 +71,6 @@ int main(int argc, char* argv[]) {
     mesh = new DelMesh(ds, score, input, output, median);
     mesh->process_mesh();
     delete(mesh);
-
-//    for (int i = 0; i < 50; i ++){
-//        mesh = new DelMesh(ds, score, input, output, median);
-//        delete(mesh);
-
-//    }
 
 
 }
@@ -183,48 +177,3 @@ void mesh_all(string input, string output){
 
 
 }
-
-/**********************************************
-
-    mesh = new DelMesh(0, 0, "nde-cube.obj", "output2/cube-pq-0.obj");
-    mesh->process_mesh();
-    delete(mesh);
-
-    mesh = new DelMesh(1, 0, "nde-cube.obj", "output2/cube-q-0.obj");
-    mesh->process_mesh();
-    delete(mesh);
-
-    mesh = new DelMesh(2, 0, "nde-cube.obj", "output2/cube-s-0.obj");
-    mesh->process_mesh();
-    delete(mesh);
-
-    mesh = new DelMesh(0, 1, "nde-cube.obj", "output2/cube-pq-1.obj");
-    mesh->process_mesh();
-    delete(mesh);
-
-    mesh = new DelMesh(1, 1, "nde-cube.obj", "output2/cube-q-1.obj");
-    mesh->process_mesh();
-    delete(mesh);
-
-    mesh = new DelMesh(2, 1, "nde-cube.obj", "output2/cube-s-1.obj");
-    mesh->process_mesh();
-    delete(mesh);
-
-    mesh = new DelMesh(0, 2, "nde-cube.obj", "output2/cube-pq-2.obj");
-    mesh->process_mesh();
-    delete(mesh);
-
-    mesh = new DelMesh(1, 2, "nde-cube.obj", "output2/cube-q-2.obj");
-    mesh->process_mesh();
-    delete(mesh);
-
-    mesh = new DelMesh(2, 2, "nde-cube.obj", "output2/cube-s-2.obj");
-    mesh->process_mesh();
-    delete(mesh);
-
-//
-
-
-    return 0;
-}
-*/

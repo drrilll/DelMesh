@@ -130,8 +130,8 @@ int Geom_2D::get_sample_point(Mesh::EdgeHandle &ehandle){
         }
 
     }
-    //cout<<"max Score: "<<maxScore<<endl;
-    //if ((maxIndex == 0)||(maxIndex == samps->size()-1)) {
+
+    //this should almost never happen either. Of course sometimes ...
     if(samps->size()==0){
         cout<<"*************************"<<endl;
         cout<<"******************index: "<<maxIndex<<endl;
@@ -150,6 +150,7 @@ int Geom_2D::get_sample_point(Mesh::EdgeHandle &ehandle){
 
     int index = stack.size()/2;
     if (stack.size() == 0){
+        //this is a problem, but I can't remember the last time it happened
         cout<<"***********************************"<<endl;
         cout<<"***********************************"<<endl;
         cout<<"***********************************"<<endl;
@@ -171,8 +172,8 @@ void Geom_2D::output_point(Mesh::EdgeHandle eh){
 
 
 /**
- * The assumption is that p0 corresponds to the from vertex. Probably true.
- * I might check it again later though
+ * The assumption is that p0 corresponds to the from vertex. From there we
+ * map the sample point into the 2D plane
  * @brief Geom_2D::mesh_to_plane
  * @param heh
  * @param samp
@@ -324,9 +325,4 @@ vector<Point_2D> Geom_2D::test_flattening(Mesh::EdgeHandle ehandle){
 }
 
 
-
-Mesh::Scalar Geom_2D::get_interval(Mesh::HalfedgeHandle &heh, Mesh::Scalar &i1){
-
-
-}
 

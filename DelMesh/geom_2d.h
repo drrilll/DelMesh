@@ -10,8 +10,6 @@ public:
     Geom_2D(Mesh* mesh, Prop *samples, Flippable* is_flippable, Delaunay_indicator* is_NDE, int score_type, bool median);
     int get_sample_point(Mesh::EdgeHandle &ehandle);
 
-    Mesh::Scalar get_interval(Mesh::HalfedgeHandle &heh, Mesh::Scalar &i1);
-
     void mesh_to_plane(Mesh::HalfedgeHandle heh, Mesh::Point &samp, Point_2D &p0, Point_2D &p1, Point_2D &dest);
 
     Mesh::Scalar distance2d(double *p1, Point_2D p2);

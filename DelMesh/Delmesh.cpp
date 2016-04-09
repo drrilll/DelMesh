@@ -26,7 +26,7 @@ DelMesh::DelMesh(int ds, int st, string input, string output,  bool median){
     this->output = output;
     score_type = st;
     // Add the samples property, which is a vector of potential vertex
-    // sites along an edge. See associated paper.
+    // sites along an edge.
     mesh.add_property(samples);
 
     //add indicator variable for non-Delaunay edges
@@ -47,10 +47,13 @@ DelMesh::DelMesh(int ds, int st, string input, string output,  bool median){
     cout<<"pv: "<<pv<<endl;
     cout<<"pe: "<<pe<<endl;
 
-    //non-Delaunay edges data structure
-
+    //make non-Delaunay edges data structure
     q = new my_p_queue(&mesh, ds);
+
+    //storing flippable NDE for processing
     flips = new my_p_queue(&mesh, 2);
+
+    //a helper class for geometry functions with access to DelMesh state
     g2d = new Geom_2D(&mesh, &samples, &is_flippable, &is_NDE, st, median);
 
 
@@ -70,7 +73,7 @@ DelMesh::~DelMesh(){
     eBegin = mesh.edges_begin();
     eEnd = mesh.edges_end();
 
-
+    //delete all the sample points
     for (eIt = eBegin; eIt != eEnd; eIt++){
         if (!mesh.property(is_flippable, eIt) &&!mesh.is_boundary(eIt)){
             delete(mesh.property(samples, eIt));
@@ -105,6 +108,11 @@ void DelMesh::process_mesh(){
 
 }
 
+/**
+ * Find all NDE's, but without making new sample points, and
+ * store them in the appropriate data structure for processing
+ * @brief DelMesh::refind_nd_edges
+ */
 void DelMesh::refind_nd_edges(){
     Mesh::EdgeIter eBegin, eEnd, eIt;
     eBegin = mesh.edges_begin();
@@ -137,7 +145,13 @@ void DelMesh::refind_nd_edges(){
 
 /**
      * @brief make_Delaunay_mesh
-     * All NDE's have been found, now we process them and create the Delaunay mesh.
+     * All current NDE's have been found, now we process them and create the Delaunay mesh.
+     * There is a lot of redundant code, that is, code that was copy and pasted. I thought of
+     * refactoring into a function, but there would be a lot of flags to pass in for different
+     * scenarios. For instance, newly created edges are processed twice, once for each half edge,
+     * but we only want to transfer samples over once. Also, we don't want to add an edge multiple
+     * times to a processing data structure. As such, the less complex approach seemed to be
+     * copy and pasting the code and modifying it.
      */
 void DelMesh::make_Delaunay_mesh(){
 
@@ -162,10 +176,6 @@ void DelMesh::make_Delaunay_mesh(){
         q->pop();
 
         //find the right sample point
-        if (mesh.is_boundary(eh)){
-            cout <<" boundary edge"<<endl;
-        }
-
         index = g2d->get_sample_point(eh);
 
         if (index == -1){
@@ -179,7 +189,6 @@ void DelMesh::make_Delaunay_mesh(){
         // remember to delete this when we are done
         samps = mesh.property(samples, eh);
 
-        //cout<<"if we are not initializing properly, you will not see the next message"<<endl;
         point = samps->at(index);
 
         //cout<<"next message samps index point: "<<samps->at(index)<<endl;
@@ -208,8 +217,6 @@ void DelMesh::make_Delaunay_mesh(){
          * adding new edges
          */
 
-        //TODO: we should check the NDE flag before we add it a second time.
-        // Flip flippable edges.
         mid = mesh.add_vertex(point);
 
         /* From here we add 4 faces. However, we need access to the edges, and the
@@ -252,44 +259,9 @@ void DelMesh::make_Delaunay_mesh(){
 
         //add in the samples in the split edge
         Mesh::FaceHalfedgeIter fhIt = mesh.fh_iter(fh1);
-        Mesh::FaceEdgeIter feIt = mesh.fe_iter(fh1);
 
         Mesh::HalfedgeHandle heh;
         Mesh::VertexHandle v1, v2;
-
-        //error checking
-        bool ch1 = false, ch2 = false, ch3 = false;
-
-        //Face 1
-        for(; feIt.is_valid(); ++feIt) {
-            /*
-             * grab a half edge, test both points, see what I have
-             */
-            heh = mesh.halfedge_handle(*feIt, 0);
-            v1 = mesh.to_vertex_handle(heh);
-            v2 = mesh.from_vertex_handle(heh);
-
-            // mid, from
-            if(((v1 == from)&&(v2 == mid))||((v1 == mid)&&(v2 == from))){
-                //cout<<"mid, from 1"<<endl;
-                ch1 = true;
-            }
-
-            // from, vh1
-            if(((v1 == from)&&(v2 == vh1))||((v1 == vh1)&&(v2 == from))){
-                ch2 = true;
-            }
-
-            // mid vh1
-            if(((v1 == mid)&&(v2 == vh1))||((v1 == vh1)&&(v2 == mid))){
-                ch3 = true;
-            }
-
-        }
-
-        if (!(ch1&&ch2&&ch3)){
-            cout << "******BAD CIRCULATOR***********"<<endl;
-        }
 
 
 
@@ -323,14 +295,11 @@ void DelMesh::make_Delaunay_mesh(){
             }else if (v == vh1){
                 if (mesh.property(is_NDE, eh)==1){
                     if (mesh.property(is_flippable, eh)==TRUE){
-                        test_flip(eh);
-                        //mesh.flip(eh);
-
+                        flip_later(eh);
                     }
                 }else if (is_nd_edge(eh, false) && !mesh.is_boundary(eh)){
                     if (mesh.property(is_flippable, eh)==TRUE){
-                        test_flip(eh);
-                        //mesh.flip(eh);
+                        flip_later(eh);
                     }else{
                         mesh.property(is_NDE, eh) = TRUE;
                         //cout<<"pushing vh1, from"<<endl;
@@ -348,39 +317,6 @@ void DelMesh::make_Delaunay_mesh(){
 
         //Face 2
         fhIt = mesh.fh_iter(fh2);
-        feIt = mesh.fe_iter(fh2);
-
-        ch1 = false, ch2 = false, ch3 = false;
-
-        for(; feIt.is_valid(); ++feIt) {
-            /*
-             * grab a half edge, test both points, see what I have
-            */
-            heh = mesh.halfedge_handle(*feIt, 0);
-            v1 = mesh.to_vertex_handle(heh);
-            v2 = mesh.from_vertex_handle(heh);
-
-            // mid, from
-            if(((v1 == from)&&(v2 == mid))||((v1 == mid)&&(v2 == from))){
-                //cout<<"mid, from 1"<<endl;
-                ch1 = true;
-            }
-
-            // from, vh1
-            if(((v1 == from)&&(v2 == vh2))||((v1 == vh2)&&(v2 == from))){
-                ch2 = true;
-            }
-
-            // mid vh1
-            if(((v1 == mid)&&(v2 == vh2))||((v1 == vh2)&&(v2 == mid))){
-                ch3 = true;
-            }
-
-        }
-
-        if (!(ch1&&ch2&&ch3)){
-            cout << "******BAD CIRCULATOR***********"<<endl;
-        }
 
         //iterate over the edges, figure out what we got and how to handle it
         //we have already added samples above, so we skip that step
@@ -388,9 +324,7 @@ void DelMesh::make_Delaunay_mesh(){
             eh = mesh.edge_handle(*fhIt);
             v = mesh.from_vertex_handle(*fhIt);
             if (v==mid){
-                //int c = mesh.property(samples, eh).size();
-                //if (c ==0){cout<<" 0 sample edge 2****************************************** "<<i<<endl;}
-                //else{cout<<c<<" sample edge 2****************************************** "<<i<<endl;}
+                //nothing to be done
             }
 
             // edge (mid, from)
@@ -400,17 +334,13 @@ void DelMesh::make_Delaunay_mesh(){
             }else if (v == from){
                 if (mesh.property(is_NDE, eh)==TRUE){
                     if (mesh.property(is_flippable, eh)==TRUE){
-                        test_flip(eh);
-                        //mesh.flip(eh);
+                        flip_later(eh);
                     }
                 }else if (is_nd_edge(eh, false) && !mesh.is_boundary(eh)){
                     if (mesh.property(is_flippable, eh)==TRUE){
-                        test_flip(eh);
-                        //mesh.flip(eh);
+                        flip_later(eh);
                     }else{
                         mesh.property(is_NDE, eh) = TRUE;
-                        //cout<<"pushing from, vh2"<<endl;
-                        //g2d->output_point(eh);
                         q->push(eh);
                     }
                 }
@@ -422,39 +352,6 @@ void DelMesh::make_Delaunay_mesh(){
 
         //Face 3
         fhIt = mesh.fh_iter(fh3);
-        feIt = mesh.fe_iter(fh3);
-
-        ch1 = false, ch2 = false, ch3 = false;
-
-        for(; feIt.is_valid(); ++feIt) {
-            /*
-                     * grab a half edge, test both points, see what I have
-                     */
-            heh = mesh.halfedge_handle(*feIt, 0);
-            v1 = mesh.to_vertex_handle(heh);
-            v2 = mesh.from_vertex_handle(heh);
-
-            // mid, from
-            if(((v1 == to)&&(v2 == mid))||((v1 == mid)&&(v2 == to))){
-                //cout<<"mid, from 1"<<endl;
-                ch1 = true;
-            }
-
-            // from, vh1
-            if(((v1 == to)&&(v2 == vh1))||((v1 == vh1)&&(v2 == to))){
-                ch2 = true;
-            }
-
-            // mid vh1
-            if(((v1 == mid)&&(v2 == vh1))||((v1 == vh1)&&(v2 == mid))){
-                ch3 = true;
-            }
-
-        }
-
-        if (!(ch1&&ch2&&ch3)){
-            cout << "******BAD CIRCULATOR***********"<<endl;
-        }
 
         //iterate over the edges, figure out what we got and how to handle it
         for (int i = 0; i < 3; i ++){
@@ -477,24 +374,19 @@ void DelMesh::make_Delaunay_mesh(){
                 }else{
                     dummy_count ++;
                 }
-                //int c = mesh.property(samples, eh).size();
-                //if (c ==0){cout<<" 0 sample edge 3 ******************************************"<<endl;}
+
                 // edge (vh1, mid) has been handled
                 // edge (to, vh1)
             }else if (v == to){
                 if (mesh.property(is_NDE, eh)==TRUE){
                     if (mesh.property(is_flippable, eh)==TRUE){
-                        test_flip(eh);
-                        //mesh.flip(eh);
+                        flip_later(eh);
                     }
                 }else if (is_nd_edge(eh, false) && !mesh.is_boundary(eh)){
                     if (mesh.property(is_flippable, eh)==TRUE){
-                        test_flip(eh);
-                        //mesh.flip(eh);
+                        flip_later(eh);
                     }else{
                         mesh.property(is_NDE, eh) = TRUE;
-                        //cout<<"pushing to, vh1"<<endl;
-                        //g2d->output_point(eh);
                         q->push(eh);
                     }
                 }
@@ -506,39 +398,6 @@ void DelMesh::make_Delaunay_mesh(){
 
         //Face 4
         fhIt = mesh.fh_iter(fh4);
-        feIt = mesh.fe_iter(fh4);
-
-        ch1 = false, ch2 = false, ch3 = false;
-
-        for(; feIt.is_valid(); ++feIt) {
-            /*
-             * grab a half edge, test both points, see what I have
-             */
-            heh = mesh.halfedge_handle(*feIt, 0);
-            v1 = mesh.to_vertex_handle(heh);
-            v2 = mesh.from_vertex_handle(heh);
-
-            // mid, from
-            if(((v1 == to)&&(v2 == mid))||((v1 == mid)&&(v2 == to))){
-                //cout<<"mid, from 1"<<endl;
-                ch1 = true;
-            }
-
-            // from, vh1
-            if(((v1 == to)&&(v2 == vh2))||((v1 == vh2)&&(v2 == to))){
-                ch2 = true;
-            }
-
-            // mid vh1
-            if(((v1 == mid)&&(v2 == vh2))||((v1 == vh2)&&(v2 == mid))){
-                ch3 = true;
-            }
-
-        }
-
-        if (!(ch1&&ch2&&ch3)){
-            cout << "******BAD CIRCULATOR***********"<<endl;
-        }
 
         //iterate over the edges, figure out what we got and how to handle it
         for (int i = 0; i < 3; i ++){
@@ -546,8 +405,7 @@ void DelMesh::make_Delaunay_mesh(){
             v = mesh.from_vertex_handle(*fhIt);
 
             if (v==to){
-                //int c = mesh.property(samples, eh).size();
-                //if (c ==0){cout<<" 0 sample edge ******************************************"<<endl;}
+                //nothing to be done
             }
 
             // edge (to, mid) has been handled
@@ -556,17 +414,13 @@ void DelMesh::make_Delaunay_mesh(){
             if (v == vh2){
                 if (mesh.property(is_NDE, eh)==TRUE){
                     if (mesh.property(is_flippable, eh)==TRUE){
-                        test_flip(eh);
-                        //mesh.flip(eh);
+                        flip_later(eh);
                     }
                 }else if (is_nd_edge(eh, false) && !mesh.is_boundary(eh)){
                     if (mesh.property(is_flippable, eh)==TRUE){
-                        test_flip(eh);
-                        //mesh.flip(eh);
+                        flip_later(eh);
                     }else{
                         mesh.property(is_NDE, eh) = TRUE;
-                        //cout<<"pushing vh2, to"<<endl;
-                        //g2d->output_point(eh);
                         q->push(eh);
                     }
                 }
@@ -597,7 +451,7 @@ void DelMesh::make_Delaunay_mesh(){
  * Put the edges to be flipped in a stack to be flipped
  * after the circulators are done
  */
-void DelMesh::test_flip(Mesh::EdgeHandle eh){
+void DelMesh::flip_later(Mesh::EdgeHandle eh){
     flips->push(eh);
 }
 
@@ -625,24 +479,21 @@ bool DelMesh::is_on_edge(Mesh::Point &v, Mesh::EdgeHandle &eh)
     to *= length;
     to += from;
     bool answer = (g2d->distance3d(to, v)<= length);
-    //    if (answer){
-    //        cout<<"on edge"<<endl;
-    //    }else{
-    //        cout<<"NOT on edge"<<endl;
-    //    }
     return answer;
 }
 
 bool DelMesh::equals(Mesh::Point p1, Mesh::Point p2){
     bool answer = ((p1[0]==p2[0])&&(p1[1]==p2[1])&&(p1[2]==p2[2]));
-    //    if (answer){
-    //        cout<<"we have a sample point equal to the end point"<<endl;
-    //    }
     return answer;
 }
 
 
-
+/**
+ * @brief DelMesh::make_constants
+ *
+ * We make the constants that are used to determine the number and spacing of the sample
+ * points. They are based on minimum angle and ratio minimum:maximum edge lengths
+ */
 void DelMesh::make_constants(){
     /*
          * Find the shortest edge, and the minimum angle
@@ -727,7 +578,6 @@ void DelMesh::make_sample_points(Mesh::EdgeHandle ehandle){
     samp *= total;
     samp += from;
 
-    //cout<<"pushing initial sample"<<endl;
     mesh.property(samples, ehandle)->push_back(samp);
 
     // We have our first sample in. If this is the shortest edge, it could
@@ -738,14 +588,11 @@ void DelMesh::make_sample_points(Mesh::EdgeHandle ehandle){
 
     // Otherwise keep adding samples
     double mark = length - (pv + pe);
-    //cout<<"pushing samples "<<(mark/pe)<<endl;
     while (total < mark){
         total += pe;
         samp = (unit * total) + from;
         mesh.property(samples, ehandle)->push_back(samp);
     }
-
-    //cout<<"add the last sample"<<endl;
 
     // We add one more sample at length *pv from the "to" vertex
     samp = (unit * (length - pv))+from;
@@ -843,8 +690,7 @@ bool DelMesh::is_nd_edge(Mesh::EdgeHandle edge, bool output = false){
 
 }
 /*
-     * Find all non-Delaunay edges and put them in a priority queue for
-     * max length
+     * Find all non-Delaunay edges and put them in a data structure for processing
      */
 void DelMesh::find_nd_edges(){
     Mesh::EdgeIter eBegin, eEnd, eIt;
